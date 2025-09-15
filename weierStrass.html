@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Weierstrass–Enneper Minimal Surface</title>
+  <script src="mathbox-bundle.js"></script>
+  <script src="dat.gui.js"></script>
+  <script src="parser.js"></script>
+  <link rel="stylesheet" href="mathbox.css">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+ 
+  <style>
+
+  </style>
+
+
+
+
+</head>
+<body>
+<script>
+// ---------- Complex number utilities ----------
+function complex(re, im) { return {re: re, im: im}; }
+function cAdd(a, b) { return {re: a.re + b.re, im: a.im + b.im}; }
+function cSub(a, b) { return {re: a.re - b.re, im: a.im - b.im}; }
+function cMul(a, b) { return {re: a.re*b.re - a.im*b.im, im: a.re*b.im + a.im*b.re}; }
+function cReal(a) { return a.re; }
+function cDiv(a,b) {
+  var denom = b.re*b.re + b.im*b.im;
+  return {re:(a.re*b.re+a.im*b.im)/denom, im:(a.im*b.re - a.re*b.im)/denom};
+}
+
+// ---------- Define f(z) and g(z) for Weierstrass–Enneper ----------
+var params = {
+  f_real: 1,
+  f_imag: 0,
+  g_real: 1,
+  g_imag: 1,
+  resolution: 20,
+  uMin: -1,
+  uMax: 1,
+  vMin: -1,
+  vMax: 1,
+  showWireframe: true,
+  showSurface: true,
+  updateParametricEquations: function() {
+    var fStr = "f(z) = " + params.f_real;
+    if (params.f_imag !== 0) {
+      fStr += (params.f_imag > 0 ? " + " : " - ") + Math.abs(params.f_imag) + "i";
+    }
+    
+    var gStr = "g(z) = " + params.g_real + "z";
+    if (params.g_imag !== 0) {
+      gStr += (params.g_imag > 0 ? " + " : " - ") + Math.abs(params.g_imag) + "iz";
+    }
+    
+    var xStr = "x(u,v) = Re(∫(1 - g(z)²)f(z)dz)";
+    var yStr = "y(u,v) = Re(∫i(1 + g(z)²)f(z)dz)";
+    var zStr = "z(u,v) = Re(∫2g(z)f(z)dz)";
+    
+    document.getElementById('equations').innerHTML = 
+      `<div><strong>${fStr}</strong></div>
+       <div><strong>${gStr}</strong></div>
+       <div>${xStr}</div>
+       <div>${yStr}</div>
+       <div>${zStr}</div>`;
+  }
+};
+
+function f(z) {
+  return complex(params.f_real, params.f_imag);
+}
+
+function g(z) {
+  return complex(params.g_real * z.re + params.g_imag * z.im, 
+                params.g_real * z.im - params.g_imag * z.re);
+}
+
+// i (imag unit)
+const iC = complex(0,1);
+
+// Integrands for W-E representation:
+function integrandX1(z) {
+  const gz = g(z);
+  const g2 = cMul(gz,gz);
+  return cMul(f(z), cSub(complex(1,0), g2));
+}
+function integrandX2(z) {
+  const gz = g(z);
+  const g2 = cMul(gz,gz);
+  return cMul(cMul(iC, f(z)), cAdd(complex(1,0), g2));
+}
+function integrandX3(z) {
+  return cMul(complex(2,0), cMul(f(z), g(z)));
+}
+
+// Numeric integration along a straight line from 0 to zTarget
+function lineIntegrate(integrand, zTarget, steps=100) {
+  var sum = complex(0,0);
+  var z0 = complex(0,0);
+  // param along line: z(t) = t * zTarget, t in [0,1]
+  var dt = 1.0/steps;
+  var valPrev = integrand(z0);
+  for (var k=1; k<=steps; k++) {
+    var t = k*dt;
+    var z = complex(zTarget.re*t, zTarget.im*t);
+    var valCurr = integrand(z);
+    // trapezoid rule
+    sum = cAdd(sum, complex((valPrev.re+valCurr.re)*dt/2, (valPrev.im+valCurr.im)*dt/2));
+    valPrev = valCurr;
+  }
+  // We integrated w.r.t. t, but dz = zTarget*dt, so multiply sum by zTarget:
+  sum = cMul(sum, zTarget);
+  return sum;
+}
+
+// Functions that compute X1(u,v), X2(u,v), X3(u,v)
+function X1(u,v) {
+  var z = complex(u,v);
+  return cReal(lineIntegrate(integrandX1, z));
+}
+function X2(u,v) {
+  var z = complex(u,v);
+  return cReal(lineIntegrate(integrandX2, z));
+}
+function X3(u,v) {
+  var z = complex(u,v);
+  return cReal(lineIntegrate(integrandX3, z));
+}
+
+// ---------- MathBox Setup ----------
+var mathbox = mathBox({
+  plugins: ['core', 'controls', 'cursor', 'mathbox'],
+  controls: {klass: THREE.OrbitControls}
+});
+if (mathbox.fallback) throw "WebGL not supported";
+
+var three = mathbox.three;
+three.renderer.setClearColor(new THREE.Color(0xFFFFFF), 1.0);
+
+// Parameter ranges
+var xMin = -1, xMax = 1;
+var yMin = -1, yMax = 1;
+var zMin = -1, zMax = 1;
+
+var camera = mathbox.camera({ proxy: true, position: [2,1,2] });
+var view = mathbox.cartesian({ range: [[xMin,xMax],[yMin,yMax],[zMin,zMax]], scale: [1,1,1] });
+
+// Axes
+view.axis({axis:1, width:3, color:"red"});
+view.axis({axis:2, width:3, color:"blue"});
+view.axis({axis:3, width:3, color:"green"});
+view.grid({axes:[1,3], width:1, divideX:10, divideY:10, opacity:0.25});
+
+// Domain for (u,v)
+var domain = mathbox.cartesian({ range: [[params.uMin,params.uMax],[params.vMin,params.vMax]] });
+
+// Set up surface points using the Weierstrass–Enneper parameterization
+var graphData = domain.area({
+  width: params.resolution, height: params.resolution,
+  expr: function(emit, u, v, i, j, t) {
+    // Compute minimal surface coords
+    var X = X1(u,v);
+    var Y = X2(u,v);
+    var Z = X3(u,v);
+    emit(X, Z, Y); // (X,Z,Y) so Y is vertical axis
+  },
+  channels: 3
+});
+
+// Assign a simple solid color
+var domainColors = domain.area({
+  width: params.resolution, height: params.resolution,
+  expr: function(emit,u,v,i,j,t) {
+    emit(0.5,0.5,1.0,1.0);
+  },
+  channels:4
+});
+
+var surface = view.surface({
+  points: graphData,
+  fill: params.showSurface, shaded: false, lineX: false, lineY: false,
+  color: "white", colors: domainColors,
+});
+
+var wireframe = view.surface({
+  points: graphData,
+  fill: false, shaded: false, lineX: params.showWireframe, lineY: params.showWireframe,
+  color: "black",
+});
+
+// GUI for adjusting parameters
+var gui = new dat.GUI();
+var fFolder = gui.addFolder('f(z) Parameters');
+fFolder.add(params, 'f_real', -2, 2).step(0.1).name('Real part').onChange(updateAll);
+fFolder.add(params, 'f_imag', -2, 2).step(0.1).name('Imag part').onChange(updateAll);
+fFolder.open();
+
+var gFolder = gui.addFolder('g(z) Parameters');
+gFolder.add(params, 'g_real', -2, 2).step(0.1).name('Real part').onChange(updateAll);
+gFolder.add(params, 'g_imag', -2, 2).step(0.1).name('Imag part').onChange(updateAll);
+gFolder.open();
+
+var displayFolder = gui.addFolder('Display');
+displayFolder.add(params, 'resolution', 5, 50).step(1).name('Resolution').onChange(updateAll);
+displayFolder.add(params, 'uMin', -5, 0).step(0.1).name('u Min').onChange(updateAll);
+displayFolder.add(params, 'uMax', 0, 5).step(0.1).name('u Max').onChange(updateAll);
+displayFolder.add(params, 'vMin', -5, 0).step(0.1).name('v Min').onChange(updateAll);
+displayFolder.add(params, 'vMax', 0, 5).step(0.1).name('v Max').onChange(updateAll);
+displayFolder.add(params, 'showSurface').name('Show Surface').onChange(updateAll);
+displayFolder.add(params, 'showWireframe').name('Show Wireframe').onChange(updateAll);
+displayFolder.open();
+
+// Add equations display
+var eqDiv = document.createElement('div');
+eqDiv.id = 'equations';
+eqDiv.style.position = 'absolute';
+eqDiv.style.top = '10px';
+eqDiv.style.left = '10px';
+eqDiv.style.backgroundColor = 'rgba(255,255,255,0.7)';
+eqDiv.style.padding = '10px';
+eqDiv.style.fontFamily = 'Arial, sans-serif';
+document.body.appendChild(eqDiv);
+
+function updateAll() {
+  // Update surface visibility
+  surface.set("fill", params.showSurface);
+  wireframe.set("lineX", params.showWireframe);
+  wireframe.set("lineY", params.showWireframe);
+  
+  // Update domain range
+  domain.set("range", [[params.uMin,params.uMax],[params.vMin,params.vMax]]);
+  
+  // Update resolution
+  graphData.set("width", params.resolution);
+  graphData.set("height", params.resolution);
+  domainColors.set("width", params.resolution);
+  domainColors.set("height", params.resolution);
+  
+  // Rebuild the surface
+  mathbox.select('area').rebuild();
+  
+  // Update the equations display
+  params.updateParametricEquations();
+}
+
+// Initialize equations display
+params.updateParametricEquations();
+
+</script>
+</body>
+</html>

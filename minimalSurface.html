@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>miniLAB</title>
+  <script src="mathbox-bundle.js"></script>
+  <script src="dat.gui.js"></script>
+  <script src="parser.js"></script>
+  <link rel="stylesheet" href="mathbox.css">
+  <link href="https://fonts.googleapis.com/css2?family=Latin+Modern+Roman&display=swap" rel="stylesheet">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/expr-eval@2.0.2/dist/bundle.min.js"></script>
+    
+    <style>
+ .gui-button {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 16px;
+            background: none;
+            border: none;
+            padding: 5px;
+        }
+        .gui-button i {
+            margin-right: 5px;
+        }
+
+.dg {
+  font-family: "Times New Roman", Times, serif !important;
+  font-size: 14px !important;
+}
+          .dg.ac { 
+    position: absolute !important;
+    top: 70px; 
+    left: 50px; 
+    }
+
+body { background-color: black; color: rgb(10, 8, 8); }
+    .mathjax-container { font-size: 18px; color: lightgreen; padding: 5px; cursor: pointer; }
+    .mathjax-input { 
+      width: 100%; 
+      padding: 10px; /* Add padding here */
+      color :black;
+      font-size: 16px; 
+      margin: 5px 0; /* Add margin for spacing */
+    }
+
+   
+    .dg .cr { height: auto !important; }  /* Allow row expansion */
+
+      .dg { 
+    z-index: 10 !important; /* Ensure dat.GUI is visible */
+}
+.mathjax-container {
+    font-size: 10px;
+    font-weight: bold;   
+}
+
+    .mathjax-container { font-size: 18px; color: lightgreen; padding: 5px; cursor: pointer; }
+    .mathjax-input { width: 100%; padding: 5px; font-size: 16px; }
+    .dg .cr { height: auto !important; }  /* Allow row expansion */
+   
+
+
+  </style>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-inverse">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">Minimal Surfaces</a>
+        </div>
+        <ul class="nav navbar-nav">
+          <li class="active"><a href="#">Home</a></li>
+          <li class="dropdown">
+            <a class="dropdown-toggle" data-toggle="dropdown" href="#">Surfaces Library
+            <span class="caret"></span></a>
+            <ul class="dropdown-menu">
+              <li><a href="#">Surfaces Library</a></li>
+              <li><a href="#">Page 1-2</a></li>
+              <li><a href="#">Page 1-3</a></li>
+            </ul>
+          </li>
+          <li><a href="#">Page 2</a></li>
+          <li><a href="#">Page 3</a></li>
+        </ul>
+      </div>
+    </nav>
+    
+<script>
+        var mathbox = mathBox({
+          plugins: ['core', 'controls', 'cursor', 'mathbox'],
+          controls: {klass: THREE.OrbitControls}
+        });
+        if (mathbox.fallback) throw "WebGL not supported"
+    
+        var three = mathbox.three;
+        three.renderer.setClearColor(new THREE.Color(0xFFFFFF), 1.0);
+    
+        var graphData, view;
+        
+        var xFunctionText = "cosh(u)*cos(v)";
+        var yFunctionText = "cosh(u)*sin(v)";
+        var zFunctionText = "u";
+        
+
+        var params = {
+          a: 5,
+          b: 0.5,
+          meanCurvatureValue: 0,
+          gaussianCurvatureValue: 0
+        };
+    
+        var xMin = -3, xMax = 3, yMin = -2, yMax = 2, zMin = -3, zMax = 3;
+        var uMin = -2.3, uMax = 2.3, vMin = 0, vMax = 6.282;
+    
+           // LaTeX formatting function
+    function formatLatex(expression) {
+      expression = expression.replace(/sqrt\(([^)]+)\)/g, "\\sqrt{$1}");
+      expression = expression.replace(/\^(\w+)/g, "^{$1}");
+      expression = expression.replace(/_(\w+)/g, "_{$1}");
+      expression = expression.replace(/\bpi\b/g, "\\pi");
+      expression = expression.replace(/\be\b/g, "e");
+      expression = expression.replace(/\bcos\b/g, "\\cos");
+      expression = expression.replace(/\bsin\b/g, "\\sin");
+      expression = expression.replace(/\btan\b/g, "\\tan");
+      expression = expression.replace(/\bln\b/g, "\\ln");
+      expression = expression.replace(/\blog\b/g, "\\log");
+      expression = expression.replace(/(\d+|\w+)\/(\d+|\w+)/g, "\\frac{$1}{$2}");
+      return expression;
+    }
+
+    // Add LaTeX editable fields to the GUI
+    function addMathJaxEditable(gui, label, paramKey) {
+    let folder1 = gui.addFolder(label);
+    
+
+    let container = document.createElement("div");
+    container.className = "mathjax-container";
+
+    function renderMathJax() {
+        let formattedLatex = formatLatex(window[paramKey]);
+        container.innerHTML = `\\( ${formattedLatex} \\)`;
+        MathJax.typesetPromise();
+    }
+
+    container.onclick = function () {
+        let input = document.createElement("input");
+        input.type = "text";
+        input.value = window[paramKey];
+        input.className = "mathjax-input";
+
+        input.onblur = function () {
+            window[paramKey] = input.value;
+            folder1.__ul.replaceChild(container, input);
+            renderMathJax();
+            updateGraphFunc(); // Update the graph when the expression changes
+        };
+
+        input.onkeypress = function (event) {
+            if (event.key === "Enter") {
+                window[paramKey] = input.value;
+                folder1.__ul.replaceChild(container, input);
+                renderMathJax();
+                updateGraphFunc(); // Update the graph when the expression changes
+            }
+        };
+
+        folder1.__ul.replaceChild(input, container);
+        input.focus();
+    };
+
+    folder1.__ul.appendChild(container); // Correctly append elements inside the folder
+    folder1.open(); // Ensure the folder is visible
+    renderMathJax()
+
+    return [folder1]; // Return the folder if needed
+}
+
+
+        function partialDerivative(func, variable, epsilon = 1e-5) {
+          return function (u, v) {
+            if (variable === "u") {
+              return (func(u + epsilon, v) - func(u - epsilon, v)) / (2 * epsilon);
+            } else if (variable === "v") {
+              return (func(u, v + epsilon) - func(u, v - epsilon)) / (2 * epsilon);
+            }
+          };
+        }
+    
+        function meanCurvature(xFunc, yFunc, zFunc) {
+          return function (u, v) {
+            // First partial derivatives
+            var xu = partialDerivative(xFunc, 'u')(u, v);
+            var xv = partialDerivative(xFunc, 'v')(u, v);
+            var yu = partialDerivative(yFunc, 'u')(u, v);
+            var yv = partialDerivative(yFunc, 'v')(u, v);
+            var zu = partialDerivative(zFunc, 'u')(u, v);
+            var zv = partialDerivative(zFunc, 'v')(u, v);
+    
+            // First fundamental form coefficients
+            var E = xu * xu + yu * yu + zu * zu;
+            var F = xu * xv + yu * yv + zu * zv;
+            var G = xv * xv + yv * yv + zv * zv;
+    
+            // Second partial derivatives
+            var xuu = partialDerivative(partialDerivative(xFunc, 'u'), 'u')(u, v);
+            var xuv = partialDerivative(partialDerivative(xFunc, 'u'), 'v')(u, v);
+            var xvv = partialDerivative(partialDerivative(xFunc, 'v'), 'v')(u, v);
+            var yuu = partialDerivative(partialDerivative(yFunc, 'u'), 'u')(u, v);
+            var yuv = partialDerivative(partialDerivative(yFunc, 'u'), 'v')(u, v);
+            var yvv = partialDerivative(partialDerivative(yFunc, 'v'), 'v')(u, v);
+            var zuu = partialDerivative(partialDerivative(zFunc, 'u'), 'u')(u, v);
+            var zuv = partialDerivative(partialDerivative(zFunc, 'u'), 'v')(u, v);
+            var zvv = partialDerivative(partialDerivative(zFunc, 'v'), 'v')(u, v);
+    
+            // Normal vector
+            var nx = yu * zv - yv * zu;
+            var ny = zu * xv - zv * xu;
+            var nz = xu * yv - xv * yu;
+            var nLength = Math.sqrt(nx * nx + ny * ny + nz * nz);
+    
+            // Avoid division by zero in normalization
+            if (nLength < 1e-10) return 0;
+    
+            // Normalize the normal vector
+            nx /= nLength;
+            ny /= nLength;
+            nz /= nLength;
+    
+            // Second fundamental form coefficients
+            var L = xuu * nx + yuu * ny + zuu * nz;
+            var M = xuv * nx + yuv * ny + zuv * nz;
+            var N = xvv * nx + yvv * ny + zvv * nz;
+    
+            // Mean curvature
+            var denominator = (E * G - F * F);
+            if (Math.abs(denominator) < 1e-10) return 0;
+            var meanCurv = (E * N - 2 * F * M + G * L) / (2 * denominator);
+    
+            return meanCurv;
+          };
+        }
+    
+        function gaussianCurvature(xFunc, yFunc, zFunc) {
+          return function (u, v) {
+            // First partial derivatives
+            var xu = partialDerivative(xFunc, 'u')(u, v);
+            var xv = partialDerivative(xFunc, 'v')(u, v);
+            var yu = partialDerivative(yFunc, 'u')(u, v);
+            var yv = partialDerivative(yFunc, 'v')(u, v);
+            var zu = partialDerivative(zFunc, 'u')(u, v);
+            var zv = partialDerivative(zFunc, 'v')(u, v);
+    
+            // First fundamental form coefficients
+            var E = xu * xu + yu * yu + zu * zu;
+            var F = xu * xv + yu * yv + zu * zv;
+            var G = xv * xv + yv * yv + zv * zv;
+    
+            // Second partial derivatives
+            var xuu = partialDerivative(partialDerivative(xFunc, 'u'), 'u')(u, v);
+            var xuv = partialDerivative(partialDerivative(xFunc, 'u'), 'v')(u, v);
+            var xvv = partialDerivative(partialDerivative(xFunc, 'v'), 'v')(u, v);
+            var yuu = partialDerivative(partialDerivative(yFunc, 'u'), 'u')(u, v);
+            var yuv = partialDerivative(partialDerivative(yFunc, 'u'), 'v')(u, v);
+            var yvv = partialDerivative(partialDerivative(yFunc, 'v'), 'v')(u, v);
+            var zuu = partialDerivative(partialDerivative(zFunc, 'u'), 'u')(u, v);
+            var zuv = partialDerivative(partialDerivative(zFunc, 'u'), 'v')(u, v);
+            var zvv = partialDerivative(partialDerivative(zFunc, 'v'), 'v')(u, v);
+    
+            // Normal vector
+            var nx = yu * zv - yv * zu;
+            var ny = zu * xv - zv * xu;
+            var nz = xu * yv - xv * yu;
+            var nLength = Math.sqrt(nx * nx + ny * ny + nz * nz);
+    
+            // Avoid division by zero in normalization
+            if (nLength < 1e-10) return 0;
+    
+            // Normalize the normal vector
+            nx /= nLength;
+            ny /= nLength;
+            nz /= nLength;
+    
+            // Second fundamental form coefficients
+            var L = xuu * nx + yuu * ny + zuu * nz;
+            var M = xuv * nx + yuv * ny + zuv * nz;
+            var N = xvv * nx + yvv * ny + zvv * nz;
+    
+            // Gaussian curvature
+            var denominator = (E * G - F * F);
+            if (Math.abs(denominator) < 1e-10) return 0;
+            var gaussianCurv = (L * N - M * M) / denominator;
+    
+            return gaussianCurv;
+          };
+        }
+    
+        var updateGraphFunc = function() {
+          var xFunc = Parser.parse(xFunctionText).toJSFunction(['u', 'v'], { a: params.a, b: params.b });
+          var yFunc = Parser.parse(yFunctionText).toJSFunction(['u', 'v'], { a: params.a, b: params.b });
+          var zFunc = Parser.parse(zFunctionText).toJSFunction(['u', 'v'], { a: params.a, b: params.b });
+          var meanCurvatureFunc = meanCurvature(xFunc, yFunc, zFunc);
+          var gaussianCurvatureFunc = gaussianCurvature(xFunc, yFunc, zFunc);
+    
+          graphData.set("expr",
+            function(emit, u, v, i, j, t) {
+              emit(xFunc(u, v), zFunc(u, v), yFunc(u, v));
+            }
+          );
+    
+          view.set("range", [[xMin, xMax], [yMin, yMax], [zMin, zMax]]);
+          domain.set("range", [[uMin, uMax], [vMin, vMax]]);
+    
+          domainColors.set("expr",
+            function(emit, u, v, i, j, t) {
+              var H = meanCurvatureFunc(u, v);
+              var color = new THREE.Color(0xffffff);
+              color.setHSL(0.5 * (1 + Math.tanh(H)), 1, 0.5); // Normalize H using tanh for stability
+              emit(color.r, color.g, color.b, 1.0);
+            }
+          );
+    
+          // Update the mean and Gaussian curvature values based on the midpoint of the parameter ranges
+          params.meanCurvatureValue = meanCurvatureFunc((uMin + uMax) / 2, (vMin + vMax) / 2);
+          params.gaussianCurvatureValue = gaussianCurvatureFunc((uMin + uMax) / 2, (vMin + vMax) / 2);
+        }
+    
+        var updateGraph = function() { updateGraphFunc(); };
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+        var camera = mathbox.camera({proxy: true, position: [2, 1, 2]});
+    
+        view = mathbox.cartesian({
+          range: [[xMin, xMax], [yMin, yMax], [zMin, zMax]],
+          scale: [2, 1, 2],
+        });
+    
+         var xAxis = view.axis( {axis: 1, width: 8, detail: 40, color:"red"} );
+        var xScale = view.scale( {axis: 1, divide: 10, nice:true, zero:true} );
+        var xTicks = view.ticks( {width: 5, size: 15, color: "red", zBias:2} );
+        var xFormat = view.format( {digits: 2, font:"Arial", weight: "bold", style: "normal", source: xScale} );
+        var xTicksLabel = view.label( {color: "red", zIndex: 0, offset:[0,-20], points: xScale, text: xFormat} );
+      
+      var yAxis = view.axis( {axis: 3, width: 8, detail: 40, color:"green"} );
+        var yScale = view.scale( {axis: 3, divide: 5, nice:true, zero:false} );
+        var yTicks = view.ticks( {width: 5, size: 15, color: "green", zBias:2} );
+        var yFormat = view.format( {digits: 2, font:"Arial", weight: "bold", style: "normal", source: yScale} );
+        var yTicksLabel = view.label( {color: "green", zIndex: 0, offset:[0,0], points: yScale, text: yFormat} );
+      
+      var zAxis = view.axis( {axis: 2, width: 8, detail: 40, color:"blue"} );
+        var zScale = view.scale( {axis: 2, divide: 5, nice:true, zero:false} );
+        var zTicks = view.ticks( {width: 5, size: 15, color: "blue", zBias:2} );
+        var zFormat = view.format( {digits: 2, font:"Arial", weight: "bold", style: "normal", source: zScale} );
+        var zTicksLabel = view.label( {color: "blue", zIndex: 0, offset:[0,0], points: zScale, text: zFormat} );
+    
+        view.grid({axes: [1, 3], width: 2, divideX: 20, divideY: 20, opacity: 0.25});
+    
+        var domain = mathbox.cartesian({
+          range: [[uMin, uMax], [vMin, vMax]]
+        });
+    
+        var resolution = 32;
+        graphData = domain.area({
+          width: resolution, height: resolution,
+          axes: [1, 2],
+          channels: 3,
+        });
+    
+        var domainColors = domain.area({
+          width: resolution, height: resolution,
+          channels: 4,
+          items: 1,
+        });
+    
+
+        view.surface({
+          shaded: true,
+          points: graphData,
+          colors: domainColors,
+          color: 0xffffff,
+          opacity: 0.1,
+        });
+
+    
+        var surfaceViewLine = view.surface({
+      points: graphData,
+      fill: false, shaded: false, lineX: true, lineY: true,
+      color: "black",
+       });
+
+
+
+        var gui = new dat.GUI();
+
+        // Add LaTeX editable fields for all three functions
+        gui.add(this, 'updateGraph').name("Parametric equation");
+        addMathJaxEditable(gui, "x(u,v)", "xFunctionText");
+        addMathJaxEditable(gui, "y(u,v)", "yFunctionText");
+        addMathJaxEditable(gui, "z(u,v)", "zFunctionText");
+        gui.open();
+
+        var f2 = gui.addFolder('Constants');
+        f2.add(params, 'a').name('a').min(0).max(2).step(0.01).onChange(updateGraph);
+        f2.add(params, 'b').name('b').min(0).max(2).step(0.01).onChange(updateGraph);
+        f2.add(params, 'meanCurvatureValue').name('Mean Curvature').listen();
+        f2.add(params, 'gaussianCurvatureValue').name('Gaussian Curvature').listen();
+        f2.open();
+    
+        var f3 = gui.addFolder('u-range');
+        f3.add(window, 'uMin').name('uMin').min(-6.282).max(6.282).step(0.1).onChange(updateGraph);
+        f3.add(window, 'uMax').name('uMax').min(-6.282).max(6.282).step(0.1).onChange(updateGraph);
+        f3.open();
+    
+        var f4 = gui.addFolder('v-range');
+        f4.add(window, 'vMin').name('vMin').min(-6.282).max(6.282).step(0.1).onChange(updateGraph);
+        f4.add(window, 'vMax').name('vMax').min(-6.282).max(6.282).step(0.1).onChange(updateGraph);
+        f4.open();
+    
+
+        var gui2 = new dat.GUI();
+        gui2.domElement.style.position = 'absolute';
+        gui2.domElement.style.left = '-50px';  // Moves it to the left
+        gui2.domElement.style.top = '0px';  // Adjust the vertical position
+
+  
+        var animationParams = {
+        isAnimating: false,
+        speed: 0.01,
+        playU: false,
+        playV: false,
+        playA: false,
+        playB: false,
+        toggleU: function() { /* Updated below */ },
+        toggleV: function() { /* Updated below */ },
+        toggleA: function() { /* Updated below */ },
+        toggleB: function() { /* Updated below */ },
+};
+
+        var fAnim = gui2.addFolder('Animation');
+        fAnim.add(animationParams, 'speed', 0.001, 2, 0.001).name("Speed");
+
+        // Create controllers and store references
+        var uController = fAnim.add(animationParams, 'toggleU').name('Parameter U ▶️');
+        var vController = fAnim.add(animationParams, 'toggleV').name('Parameter V ▶️');
+        var aController = fAnim.add(animationParams, 'toggleA').name('Parameter A ▶️');
+        var bController = fAnim.add(animationParams, 'toggleB').name('Parameter B ▶️');
+
+        // Update toggle functions with icon logic
+        animationParams.toggleU = function() {
+        animationParams.playU = !animationParams.playU;
+        uController.name('Parameter U ' + (animationParams.playU ? '⏸️' : '▶️'));
+        animate();
+};
+
+    animationParams.toggleV = function() {
+    animationParams.playV = !animationParams.playV;
+    vController.name('Parameter V ' + (animationParams.playV ? '⏸️' : '▶️'));
+    animate();
+};
+
+animationParams.toggleA = function() {
+    animationParams.playA = !animationParams.playA;
+    aController.name('Parameter A ' + (animationParams.playA ? '⏸️' : '▶️'));
+    animate();
+};
+
+animationParams.toggleB = function() {
+    animationParams.playB = !animationParams.playB;
+    bController.name('Parameter B ' + (animationParams.playB ? '⏸️' : '▶️'));
+    animate();
+};
+
+fAnim.open();
+
+// Keep the existing animate function unchanged
+function animate() {
+    if (animationParams.playU || animationParams.playV || animationParams.playA || animationParams.playB) {
+        requestAnimationFrame(animate);
+    }
+
+    if (animationParams.playU) {
+        window.uMin += animationParams.speed;
+        window.uMax += animationParams.speed;
+    }
+    if (animationParams.playV) {
+        window.vMin += animationParams.speed;
+        window.vMax += animationParams.speed;
+    }
+    if (animationParams.playA) {
+        params.a = Math.min(2, params.a + animationParams.speed);
+    }
+    if (animationParams.playB) {
+        params.b = Math.min(2, params.b + animationParams.speed);
+    }
+
+    updateGraph();
+}
+
+
+
+        updateGraph();
+      </script>
+    </body>
+    </html>
+    
+
