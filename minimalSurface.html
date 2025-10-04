@@ -13,7 +13,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  
+  <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.9/build/dat.gui.min.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
   <script type="text/javascript" id="MathJax-script" async
@@ -25,55 +25,46 @@
     <script src="https://cdn.jsdelivr.net/npm/expr-eval@2.0.2/dist/bundle.min.js"></script>
     
     <style>
- .gui-button {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            font-size: 16px;
-            background: none;
-            border: none;
-            padding: 5px;
-        }
-        .gui-button i {
-            margin-right: 5px;
-        }
-
 .dg {
-  font-family: "Times New Roman", Times, serif !important;
-  font-size: 14px !important;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 14px;
+  z-index: 10;
 }
-          .dg.ac { 
-    position: absolute !important;
-    top: 70px; 
-    left: 50px; 
-    }
 
-body { background-color: black; color: rgb(10, 8, 8); }
-    .mathjax-container { font-size: 18px; color: lightgreen; padding: 5px; cursor: pointer; }
-    .mathjax-input { 
-      width: 100%; 
-      padding: 10px; /* Add padding here */
-      color :black;
-      font-size: 16px; 
-      margin: 5px 0; /* Add margin for spacing */
-    }
-
-   
-    .dg .cr { height: auto !important; }  /* Allow row expansion */
-
-      .dg { 
-    z-index: 10 !important; /* Ensure dat.GUI is visible */
+.dg.ac {
+  position: absolute;
+  top: 70px;
+  left: 50px;
+  z-index: 9999;
 }
+
 .mathjax-container {
-    font-size: 10px;
-    font-weight: bold;   
+  font-size: 18px;
+  font-weight: bold;
+  color: lightgreen;
+  padding: 5px;
+  cursor: pointer;
 }
 
-    .mathjax-container { font-size: 18px; color: lightgreen; padding: 5px; cursor: pointer; }
-    .mathjax-input { width: 100%; padding: 5px; font-size: 16px; }
-    .dg .cr { height: auto !important; }  /* Allow row expansion */
+.mathjax-input {
+  width: 100%;
+  padding: 10px;
+  color: black;
+  font-size: 16px;
+  margin: 5px 0;
+}
    
-
+ .navbar-inverse .dropdown-menu {
+    background-color: #222;
+  }
+  .navbar-inverse .dropdown-menu > li > a {
+    color: #090707 !important;
+  }
+  .navbar-inverse .dropdown-menu > li > a:hover,
+  .navbar-inverse .dropdown-menu > li > a:focus {
+    background-color: #ee1414 !important;
+    color: #0d0505 !important;
+  }
 
   </style>
 </head>
@@ -92,8 +83,6 @@ body { background-color: black; color: rgb(10, 8, 8); }
             <span class="caret"></span></a>
             <ul class="dropdown-menu">
               <li><a href="#">Surfaces Library</a></li>
-              <li><a href="#">Page 1-2</a></li>
-              <li><a href="#">Page 1-3</a></li>
             </ul>
           </li>
           <li><a href="#">Page 2</a></li>
@@ -103,6 +92,8 @@ body { background-color: black; color: rgb(10, 8, 8); }
     </nav>
     
 <script>
+        
+
         var mathbox = mathBox({
           plugins: ['core', 'controls', 'cursor', 'mathbox'],
           controls: {klass: THREE.OrbitControls}
@@ -114,21 +105,123 @@ body { background-color: black; color: rgb(10, 8, 8); }
     
         var graphData, view;
         
-        var xFunctionText = "cosh(u)*cos(v)";
-        var yFunctionText = "cosh(u)*sin(v)";
-        var zFunctionText = "u";
+        var xFunctionText = "1/3*u*(1-u^2+3*v^2)";
+        var yFunctionText = "1/3*v*(1-v^2+3*u^2)";
+        var zFunctionText = "u^2-v^2";
         
+ const surfaceLibrary = {
+  "Enneper": {
+    x: "1/3*u*(1 - u^2 + 3*v^2)",
+    y: "1/3*v*(1 - v^2 + 3*u^2)",
+    z: "u^2 - v^2",
+    xMin: -3, xMax: 3,
+    yMin: -3, yMax: 3,
+    zMin: -3, zMax: 3,
+    uMin: -2.1, uMax: 2.1,
+    vMin: -2.1, vMax: 2.1
+  },
+  "Catenoid": {
+    x: "cos(v) * cosh(u)",
+    y: "sin(v) * cosh(u)",
+    z: "u",
+    xMin: -4, xMax: 4,
+    yMin: -4, yMax: 4,
+    zMin: -2, zMax: 2,
+    uMin: -1.5, uMax: 5,
+    vMin: 0, vMax: 5,
+  },
+  "Helicoid": {
+    x: "u * cos(v)",
+    y: "u * sin(v)",
+    z: "v",
+    xMin: -3, xMax: 3,
+    yMin: -3, yMax: 3,
+    zMin: -6, zMax: 6,
+    uMin: -2, uMax: 2,
+    vMin: -3, vMax: 5
+  },
+    "Saddle ridge": {
+    x: "u",
+    y: "v",
+    z: "u^2-v^2",
+    xMin: -4, xMax: 4,
+    yMin: -4, yMax: 4,
+    zMin: -2, zMax: 2,
+    uMin: -1.5, uMax: 5,
+    vMin: 0, vMax: 5,
+  },
+  "Ridge": {
+    x: "u",
+    y: "v",
+    z: "u^2",
+  },
+    "Peak": {
+    x: "u",
+    y: "v",
+    z: "u^2+v^2-sqrt(u^4+v^4)",
+  },
+    "Plane": {
+    x: "u",
+    y: "v",
+    z: "0",
+  },
+  "Ridge": {
+    x: "u",
+    y: "v",
+    z: "u^2",
+  },
+  "Saddle Vally": {
+    x: "u",
+    y: "v",
+    z: "u^2-v^2+0.1*(u^2+v^2)",
+  },
+
+  "Valley": {
+    x: "u",
+    y: "v",
+    z: "-u^2",
+  },
+  "Pit": {
+    x: "u",
+    y: "v",
+    z: "u^2+v^2",
+  },
+
+
+
+
+
+
+
+ }
+
+
+
+
 
         var params = {
-          a: 5,
+          a: 1,
           b: 0.5,
           meanCurvatureValue: 0,
           gaussianCurvatureValue: 0
+          
         };
     
         var xMin = -3, xMax = 3, yMin = -2, yMax = 2, zMin = -3, zMax = 3;
-        var uMin = -2.3, uMax = 2.3, vMin = 0, vMax = 6.282;
-    
+        var uMin = -2.1, uMax = 2.1, vMin = -1.5, vMax = 1.5;
+
+        var meanCurvLastValue = 0;
+
+var surfaceStatus = {
+  type: "unknown"
+};
+
+var previousSurfaceType = "unknown";
+
+var exportParams = {
+  stlResolution: 64  // default resolution
+};
+
            // LaTeX formatting function
     function formatLatex(expression) {
       expression = expression.replace(/sqrt\(([^)]+)\)/g, "\\sqrt{$1}");
@@ -139,11 +232,40 @@ body { background-color: black; color: rgb(10, 8, 8); }
       expression = expression.replace(/\bcos\b/g, "\\cos");
       expression = expression.replace(/\bsin\b/g, "\\sin");
       expression = expression.replace(/\btan\b/g, "\\tan");
+      expression = expression.replace(/\bcosec\b/g, "\\cosec");
+      expression = expression.replace(/\bsec\b/g, "\\sec");
+      expression = expression.replace(/\bcot\b/g, "\\cot");
       expression = expression.replace(/\bln\b/g, "\\ln");
       expression = expression.replace(/\blog\b/g, "\\log");
       expression = expression.replace(/(\d+|\w+)\/(\d+|\w+)/g, "\\frac{$1}{$2}");
       return expression;
     }
+
+    function loadSurfaceFromLibrary(name) {
+  const surf = surfaceLibrary[name];
+  if (!surf) return;
+
+  xFunctionText = surf.x;
+  yFunctionText = surf.y;
+  zFunctionText = surf.z;
+
+  // Render MathJax display ใหม่
+  updateGraph();
+  renderMathJaxAll();
+}
+
+function renderMathJaxAll() {
+  document.querySelectorAll(".mathjax-container").forEach((el, idx) => {
+    let latex = formatLatex(
+      idx === 0 ? xFunctionText :
+      idx === 1 ? yFunctionText : zFunctionText
+    );
+    el.innerHTML = `\\( ${latex} \\)`;
+  });
+  MathJax.typesetPromise();
+}
+
+
 
     // Add LaTeX editable fields to the GUI
     function addMathJaxEditable(gui, label, paramKey) {
@@ -311,37 +433,140 @@ body { background-color: black; color: rgb(10, 8, 8); }
           };
         }
     
-        var updateGraphFunc = function() {
-          var xFunc = Parser.parse(xFunctionText).toJSFunction(['u', 'v'], { a: params.a, b: params.b });
-          var yFunc = Parser.parse(yFunctionText).toJSFunction(['u', 'v'], { a: params.a, b: params.b });
-          var zFunc = Parser.parse(zFunctionText).toJSFunction(['u', 'v'], { a: params.a, b: params.b });
-          var meanCurvatureFunc = meanCurvature(xFunc, yFunc, zFunc);
-          var gaussianCurvatureFunc = gaussianCurvature(xFunc, yFunc, zFunc);
-    
-          graphData.set("expr",
-            function(emit, u, v, i, j, t) {
-              emit(xFunc(u, v), zFunc(u, v), yFunc(u, v));
-            }
-          );
-    
-          view.set("range", [[xMin, xMax], [yMin, yMax], [zMin, zMax]]);
-          domain.set("range", [[uMin, uMax], [vMin, vMax]]);
-    
-          domainColors.set("expr",
-            function(emit, u, v, i, j, t) {
-              var H = meanCurvatureFunc(u, v);
-              var color = new THREE.Color(0xffffff);
-              color.setHSL(0.5 * (1 + Math.tanh(H)), 1, 0.5); // Normalize H using tanh for stability
-              emit(color.r, color.g, color.b, 1.0);
-            }
-          );
-    
-          // Update the mean and Gaussian curvature values based on the midpoint of the parameter ranges
-          params.meanCurvatureValue = meanCurvatureFunc((uMin + uMax) / 2, (vMin + vMax) / 2);
-          params.gaussianCurvatureValue = gaussianCurvatureFunc((uMin + uMax) / 2, (vMin + vMax) / 2);
-        }
-    
-        var updateGraph = function() { updateGraphFunc(); };
+var updateGraphFunc = function() {
+  var xFunc = Parser.parse(xFunctionText).toJSFunction(['u', 'v'], { a: params.a, b: params.b });
+  var yFunc = Parser.parse(yFunctionText).toJSFunction(['u', 'v'], { a: params.a, b: params.b });
+  var zFunc = Parser.parse(zFunctionText).toJSFunction(['u', 'v'], { a: params.a, b: params.b });
+  var meanCurvatureFunc = meanCurvature(xFunc, yFunc, zFunc);
+  var gaussianCurvatureFunc = gaussianCurvature(xFunc, yFunc, zFunc);
+
+  graphData.set("expr", function(emit, u, v, i, j, t) {
+    emit(xFunc(u, v), zFunc(u, v), yFunc(u, v));
+  });
+
+  view.set("range", [[xMin, xMax], [yMin, yMax], [zMin, zMax]]);
+  domain.set("range", [[uMin, uMax], [vMin, vMax]]);
+
+  //////////////////////////////////////////////////////////////////////////////////
+
+domainColors.set("expr", function(emit, u, v, i, j, t) {
+  var H = meanCurvatureFunc(u, v);
+  var K = gaussianCurvatureFunc(u, v);
+  var lightness = 2;
+  
+  // คำนวณสีจาก H (Red channel)
+  var r = 0;
+  if (H > 0.01) r = 1.0;        // H>0 = แดงเต็ม
+  else if (H < -0.01) r = 0.5;  // H<0 = แดงครึ่ง
+  
+  // คำนวณสีจาก K (Blue channel)  
+  var b = 0;
+  if (K > 0.01) b = 1.0;        // K>0 = น้ำเงินเต็ม
+  else if (K < -0.01) b = 0.5;  // K<0 = น้ำเงินครึ่ง
+  
+  // คำนวณสีจากทั้งคู่ (Green channel)
+  var g = 0;
+  if (Math.abs(H) < 0.01 && Math.abs(K) < 0.01) g = 1.0; // ทั้งคู่≈0 = เขียว
+  
+  emit(r, g, b, 1.0);
+});
+
+////////////////////////////////////////////////////////////////////////////////////////////
+  // ✅ อัปเดตค่าความโค้งตรงจุดกลางพาราเมตริก
+  params.meanCurvatureValue = meanCurvatureFunc((uMin + uMax) / 2, (vMin + vMax) / 2);
+  params.gaussianCurvatureValue = gaussianCurvatureFunc((uMin + uMax) / 2, (vMin + vMax) / 2);
+  meanCurvLastValue = params.meanCurvatureValue;
+
+  // ✅ ต้องอยู่ "ข้างใน" ฟังก์ชันนี้
+  let currentType = Math.abs(params.meanCurvatureValue) < 1e-5
+    ? "Minimal Surface"
+    : "Not Minimal Surface";
+
+  // ✅ อัปเดตเฉพาะเมื่อค่ามีการเปลี่ยนจริง
+  if (currentType !== previousSurfaceType) {
+    surfaceStatus.type = currentType;
+    previousSurfaceType = currentType;
+    surfaceTypeController.updateDisplay();  // 💡 สำคัญ: บอก dat.GUI ให้ refresh
+  }
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////        
+        //stl files exporter
+        function exportSTL(xFunc, yFunc, zFunc, uRange, vRange, resolution) {
+  let stl = 'solid surface\n';
+
+  const uStep = (uRange[1] - uRange[0]) / (resolution - 1);
+  const vStep = (vRange[1] - vRange[0]) / (resolution - 1);
+
+  function vertex(u, v) {
+    return [xFunc(u, v), yFunc(u, v), zFunc(u, v)];
+  }
+
+  for (let i = 0; i < resolution - 1; i++) {
+    for (let j = 0; j < resolution - 1; j++) {
+      const u0 = uRange[0] + i * uStep;
+      const u1 = uRange[0] + (i + 1) * uStep;
+      const v0 = vRange[0] + j * vStep;
+      const v1 = vRange[0] + (j + 1) * vStep;
+
+      const p00 = vertex(u0, v0);
+      const p10 = vertex(u1, v0);
+      const p11 = vertex(u1, v1);
+      const p01 = vertex(u0, v1);
+
+      // Triangle 1
+      stl += facetToSTL(p00, p10, p11);
+      // Triangle 2
+      stl += facetToSTL(p00, p11, p01);
+    }
+  }
+
+  stl += 'endsolid surface\n';
+
+  const blob = new Blob([stl], { type: 'text/plain' });
+  const link = document.createElement('a');
+  link.download = 'surface.stl';
+  link.href = URL.createObjectURL(blob);
+  link.click();
+}
+
+function facetToSTL(p1, p2, p3) {
+  const normal = computeNormal(p1, p2, p3);
+  return `facet normal ${normal.join(' ')}\n  outer loop\n` +
+         `    vertex ${p1.join(' ')}\n    vertex ${p2.join(' ')}\n    vertex ${p3.join(' ')}\n` +
+         `  endloop\nendfacet\n`;
+}
+
+function computeNormal(p1, p2, p3) {
+  const u = [p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]];
+  const v = [p3[0] - p1[0], p3[1] - p1[1], p3[2] - p1[2]];
+  const nx = u[1] * v[2] - u[2] * v[1];
+  const ny = u[2] * v[0] - u[0] * v[2];
+  const nz = u[0] * v[1] - u[1] * v[0];
+  const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+  return [nx / len, ny / len, nz / len];
+}
+
+let time = 0;
+let uCenter = (uMin + uMax) / 2;
+let vCenter = (vMin + vMax) / 2;
+
+mathbox.clock().on('tick', function (dt) {
+  time += dt;
+
+  // Animate u and v in a loop
+  let u = uCenter + 0.5 * Math.sin(time);
+  let v = vCenter + 0.5 * Math.cos(time);
+
+  let x = xFunc(u, v);
+  let y = yFunc(u, v);
+  let z = zFunc(u, v);
+
+  pointTrail.set("points", [[x, z, y]]);
+});
+
+var updateGraph = function() { updateGraphFunc(); };
 
         
 
@@ -408,11 +633,11 @@ body { background-color: black; color: rgb(10, 8, 8); }
     
 
         view.surface({
-          shaded: true,
+          shaded: false,
           points: graphData,
           colors: domainColors,
           color: 0xffffff,
-          opacity: 0.1,
+          opacity: 1,
         });
 
     
@@ -422,9 +647,22 @@ body { background-color: black; color: rgb(10, 8, 8); }
       color: "black",
        });
 
+       var pointTrail = view.point({
+       color: 0xff00ff,
+       size: 10
+});
 
 
+///////////////////////////////////////////////////////////////////////////////////////////////
         var gui = new dat.GUI();
+
+
+        const surfaceNames = Object.keys(surfaceLibrary);
+const libraryParams = { selectedSurface: surfaceNames[0] };
+
+gui.add(libraryParams, 'selectedSurface', surfaceNames)
+   .name("Surface Library")
+   .onChange(loadSurfaceFromLibrary);
 
         // Add LaTeX editable fields for all three functions
         gui.add(this, 'updateGraph').name("Parametric equation");
@@ -438,6 +676,7 @@ body { background-color: black; color: rgb(10, 8, 8); }
         f2.add(params, 'b').name('b').min(0).max(2).step(0.01).onChange(updateGraph);
         f2.add(params, 'meanCurvatureValue').name('Mean Curvature').listen();
         f2.add(params, 'gaussianCurvatureValue').name('Gaussian Curvature').listen();
+        var surfaceTypeController = f2.add(surfaceStatus, 'type').name('Surface Type');
         f2.open();
     
         var f3 = gui.addFolder('u-range');
@@ -448,15 +687,52 @@ body { background-color: black; color: rgb(10, 8, 8); }
         var f4 = gui.addFolder('v-range');
         f4.add(window, 'vMin').name('vMin').min(-6.282).max(6.282).step(0.1).onChange(updateGraph);
         f4.add(window, 'vMax').name('vMax').min(-6.282).max(6.282).step(0.1).onChange(updateGraph);
+        
         f4.open();
     
+       
+        
 
         var gui2 = new dat.GUI();
         gui2.domElement.style.position = 'absolute';
         gui2.domElement.style.left = '-50px';  // Moves it to the left
         gui2.domElement.style.top = '0px';  // Adjust the vertical position
 
-  
+        gui2.add({ exportSTL: function () {
+  try {
+    const xFunc = Parser.parse(xFunctionText).toJSFunction(['u', 'v'], { a: params.a, b: params.b });
+    const yFunc = Parser.parse(yFunctionText).toJSFunction(['u', 'v'], { a: params.a, b: params.b });
+    const zFunc = Parser.parse(zFunctionText).toJSFunction(['u', 'v'], { a: params.a, b: params.b });
+
+    const uRange = [uMin, uMax];
+    const vRange = [vMin, vMax];
+    const resolution = 64; // ปรับละเอียดตามต้องการ
+    
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+var fExport = gui.addFolder("Export");
+
+fExport.add(exportParams, 'stlResolution', 10, 200, 1).name("STL Resolution");
+
+fExport.add({ exportSTL: function () {
+  const xFunc = Parser.parse(xFunctionText).toJSFunction(['u', 'v'], { a: params.a, b: params.b });
+  const yFunc = Parser.parse(yFunctionText).toJSFunction(['u', 'v'], { a: params.a, b: params.b });
+  const zFunc = Parser.parse(zFunctionText).toJSFunction(['u', 'v'], { a: params.a, b: params.b });
+
+  exportSTL(
+    xFunc, yFunc, zFunc,
+    [uMin, uMax], [vMin, vMax],
+    exportParams.stlResolution  // ✅ ใช้ค่าจาก GUI
+  );
+}}, 'exportSTL').name("💾 Export STL");
+
+fExport.open();
+
+    exportSTL(xFunc, yFunc, zFunc, uRange, vRange, resolution);
+  } catch (e) {
+    alert("Error exporting STL: " + e.message);
+  }
+}}, 'exportSTL').name("💾 Export STL");
+
         var animationParams = {
         isAnimating: false,
         speed: 0.01,
@@ -530,9 +806,11 @@ function animate() {
     updateGraph();
 }
 
-
+loadSurfaceFromLibrary("Enneper");
 
         updateGraph();
+
+ 
       </script>
     </body>
     </html>
